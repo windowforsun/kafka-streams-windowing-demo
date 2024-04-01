@@ -59,29 +59,4 @@ public class SessionWindow {
                 .to("session-result", Produced.with(stringSerde, myEventAggSerde));
     }
 
-    @Autowired
-    public void process(StreamsBuilder streamsBuilder) {
-        Serde<Link> linkSerde = new LinkSerde();
-        Serde<LinkSummary> linkSummarySerde = new LinkSummarySerde();
-        Serde<String> stringSerde = new Serdes.StringSerde();
-
-        streamsBuilder.<String, String>stream("link.status", Consumed.with(stringSerde, stringSerde))
-                .peek((k, v) -> log.info("session peek link.status event {} : {}", k, v))
-                .groupByKey()
-                .windowedBy(SessionWindows.ofInactivityGapAndGrace(Duration.ofMillis(this.inactivityGap), Duration.ofMillis(this.windowGrade)))
-                .aggregate(() -> "",
-//                        ProcessorUtil::aggregate,
-                        (key, value, aggregate) -> aggregate.concat(value),
-                        (aggKey, aggOne, aggTwo) -> aggOne.concat(aggTwo),
-//                        Materialized.<String, String, WindowStore< Bytes, byte[]>>as("session-window-link-store")
-//                                .withKeySerde(stringSerde)
-//                                .withValueSerde(stringSerde)
-                        Materialized.with(stringSerde, stringSerde)
-                )
-                .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded()))
-                .toStream()
-                .map((k, v) -> KeyValue.pair(k.key(), v))
-                .peek((k, v) -> log.info("session peek {} : {}", k, v))
-                .to("link.session", Produced.with(stringSerde, stringSerde));
-    }
 }

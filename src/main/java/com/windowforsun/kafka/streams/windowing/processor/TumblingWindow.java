@@ -51,27 +51,4 @@ public class TumblingWindow {
 
     }
 
-    @Autowired
-    public void process(StreamsBuilder streamsBuilder) {
-        Serde<Link> linkSerde = new LinkSerde();
-        Serde<LinkSummary> linkSummarySerde = new LinkSummarySerde();
-        Serde<String> stringSerde = new Serdes.StringSerde();
-
-        streamsBuilder.stream("link.status", Consumed.with(stringSerde, linkSerde))
-                .peek((k, v) -> log.info("tumbling peek link.status event {} : {}", k ,v))
-                .groupByKey()
-                .windowedBy(TimeWindows.ofSizeAndGrace(Duration.ofMillis(this.windowDuration), Duration.ofMillis(this.windowGrace)))
-                .aggregate(() -> new LinkSummary(),
-                        ProcessorUtil::aggregate,
-                        Materialized.<String, LinkSummary, WindowStore<Bytes, byte[]>>as("tumbling-window-link-store")
-                                .withKeySerde(stringSerde)
-                                .withValueSerde(linkSummarySerde)
-                )
-                .suppress(Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded()))
-                .toStream()
-                .map((k, v) -> KeyValue.pair(k.key(), v))
-                .peek((k, v) -> log.info("tumbling peek linkSummary {} : {}", k, v))
-                .to("link.tumbling", Produced.with(stringSerde, linkSummarySerde));
-    }
-
 }
