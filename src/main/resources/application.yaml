@@ -1,0 +1,29 @@
+spring:
+  kafka:
+    bootstrap-servers: kafka-service:9092
+#    streams:
+#      application-id: "demo-app"
+#      properties:
+#        default:
+#          key:
+#            serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+#          value:
+#            serde: org.apache.kafka.common.serialization.Serdes$SrpingSerde
+
+hopping:
+  processor:
+    window:
+      duration: 10000
+      advance: 5000
+tumbling:
+  processor:
+    window:
+      duration: 10000
+      grace: 0
+sliding:
+  processor:
+    window:
+      duration: 30000
+      grace: 0
+    link:
+      threshold: 20
